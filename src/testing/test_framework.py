@@ -20,7 +20,7 @@ class AmmeterTestFramework:
         port = ammeter_config['port']
         command = ammeter_config['command'].encode('utf-8')
         
-        request_current_from_ammeter(port, command)
+        return request_current_from_ammeter(port, command)
 
     def run_test(self, ammeter_type: str) -> Dict:
         pass
