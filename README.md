@@ -50,5 +50,26 @@ This project provides emulators for different types of ammeters: Greenlee, ENTES
 
 To start the ammeter emulators and request current measurements, run the `main.py` script:
 ```sh
-python main.py
+python3 main.py
 ```
+
+---
+
+## Design Decisions & Bug Fixes
+
+### 1. Emulator Communication Fix (PR #10)
+**The Problem:** The initial `main.py` script failed to fetch data from the ammeter emulators.
+**The Fix:** 
+- Discovered discrepancies between the documented ports/commands, `main.py`, and the actual `Ammeters/*_Ammeter.py` implementations.
+- Unified the configuration to make `config/config.yaml` and the emulator classes the source of truth.
+- Set the ammeters to listen sequentially on ports `5000` (Greenlee), `5001` (ENTES), and `5002` (CIRCUTOR).
+- Updated `main.py` to send the correct byte strings (e.g., `b'MEASURE_CIRCUTOR -get_measurement'`).
+- Added `socket.SO_REUSEADDR` to `base_ammeter.py` to prevent "Address already in use" errors during rapid test iterations.
+
+### 2. Unified Testing API (Current)
+**The Problem:** The exam requires a unified interface capable of communicating consistently with multiple ammeter types.
+**The Design:**
+- Implemented `AmmeterTestFramework` in `src/testing/test_framework.py`.
+- The framework acts as an abstraction layer; users simply call `get_single_reading('greenlee')` without needing to manage raw sockets, ports, or byte commands.
+- The framework dynamically reads the required connection parameters from `config/config.yaml`.
+- The base `client.py` was updated to decode and return standard Python `float` types rather than printing to stdout, enabling programmatic data aggregation.
