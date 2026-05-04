@@ -73,3 +73,11 @@ python3 main.py
 - The framework acts as an abstraction layer; users simply call `get_single_reading('greenlee')` without needing to manage raw sockets, ports, or byte commands.
 - The framework dynamically reads the required connection parameters from `config/config.yaml`.
 - The base `client.py` was updated to decode and return standard Python `float` types rather than printing to stdout, enabling programmatic data aggregation.
+
+### 3. Configurable Sampling Engine (Issue #8)
+**The Problem:** The framework needs a sampling mechanism to automate test runs based on configuration parameters (frequency, duration, and count).
+**The Design:**
+- Implemented the `run_test(ammeter_type)` method in `AmmeterTestFramework`.
+- The engine dynamically reads the `testing.sampling` section of `config.yaml`.
+- It supports looping based on either `measurements_count` or `total_duration_seconds`, automatically calculating the sleep delay using `sampling_frequency_hz` to ensure precise timing.
+- It aggregates all measurements and returns a comprehensive metadata dictionary containing the raw array and execution stats.

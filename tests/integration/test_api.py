@@ -30,6 +30,24 @@ if __name__ == "__main__":
                 failures += 1
             else:
                 print(f"✅ Success! API returned type: {type(value).__name__}, value: {value}\n")
+                
+            print(f"--- Running automated test run for {ammeter.upper()} ---")
+            result = framework.run_test(ammeter)
+            count = result.get('count', 0)
+            if count > 0:
+                print(f"✅ Success! Automated run collected {count} samples in {result.get('duration_seconds'):.2f}s.")
+                
+                measurements = result.get('measurements', [])
+                if measurements:
+                    avg_val = sum(measurements) / len(measurements)
+                    min_val = min(measurements)
+                    max_val = max(measurements)
+                    print(f"   📊 Stats -> Avg: {avg_val:.4f} A | Min: {min_val:.4f} A | Max: {max_val:.4f} A")
+                    print(f"   📝 Raw Data (first 3): {measurements[:3]}")
+                print("\n")
+            else:
+                print(f"❌ Failed: Automated run collected 0 samples.\n")
+                failures += 1
         except Exception as e:
             print(f"❌ Failed to fetch {ammeter}: {e}\n")
             failures += 1
