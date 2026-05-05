@@ -21,4 +21,4 @@ jobs:
         pip install pytest
 
     - name: Run Pytest Suite
-      run: pytest tests/
+      run: python -m pytest tests/
