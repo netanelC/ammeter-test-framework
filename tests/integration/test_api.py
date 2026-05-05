@@ -1,54 +1,77 @@
-import sys
-import os
-
-# Ensure the root directory is in the python path
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'))
-sys.path.insert(0, project_root)
-
-from main import start_emulators
+import pytest
+import time
 from src.testing.test_framework import AmmeterTestFramework
 
-if __name__ == "__main__":
-    print("Starting ammeter emulators in the background...")
+# Run automatically before any tests to start the emulators
+@pytest.fixture(scope="session", autouse=True)
+def ammeter_emulators():
+    """Starts the ammeter emulators in the background for integration tests."""
+    from main import start_emulators
     start_emulators()
-    print("Emulators started. Testing the new API...\n")
+    yield
+    # Daemon threads will terminate automatically when the pytest session completes
 
-    # Initialize your new framework
-    # Note: We need to pass the absolute path to the config file so it works from any directory
-    config_path = os.path.join(project_root, 'config', 'config.yaml')
-    framework = AmmeterTestFramework(config_path=config_path)
+@pytest.fixture
+def framework():
+    return AmmeterTestFramework(config_path="config/config.yaml")
 
-    failures = 0
+@pytest.fixture
+def original_config(framework):
+    """Fixture to backup and restore the framework's configuration."""
+    orig_cfg = framework.config.get('testing', {}).copy()
+    yield
+    framework.config['testing'] = orig_cfg
 
-    # Test reading from each valid type
+def test_get_single_reading_valid_types(framework):
     for ammeter in ['greenlee', 'entes', 'circutor']:
-        print(f"--- Requesting reading from {ammeter.upper()} ---")
-        try:
-            value = framework.get_single_reading(ammeter)
-            if value is None:
-                print(f"❌ Failed: API returned None instead of a value for {ammeter}\n")
-                failures += 1
-            else:
-                print(f"✅ Success! API returned type: {type(value).__name__}, value: {value}\n")
-        except Exception as e:
-            print(f"❌ Failed to fetch {ammeter}: {e}\n")
-            failures += 1
+        val = framework.get_single_reading(ammeter)
+        assert isinstance(val, float)
+        assert val is not None
 
-    # Test reading from an invalid type (Expected to fail)
-    print(f"--- Requesting reading from UNKNOWN (Expected to raise ValueError) ---")
-    try:
-        framework.get_single_reading('unknown')
-        print(f"❌ Failed: Expected ValueError, but reading succeeded.\n")
-        failures += 1
-    except ValueError as e:
-        print(f"✅ Success! API correctly raised ValueError for unknown ammeter.\n")
-    except Exception as e:
-        print(f"❌ Failed: Expected ValueError, but got {type(e).__name__}: {e}\n")
-        failures += 1
+def test_get_single_reading_invalid_type(framework):
+    with pytest.raises(ValueError, match="Unknown ammeter type"):
+        framework.get_single_reading("unknown")
 
-    if failures > 0:
-        print(f"Integration tests failed with {failures} error(s).")
-        sys.exit(1)
-    else:
-        print("All integration tests passed successfully!")
-        sys.exit(0)
+def test_run_test_count_before_duration(framework, original_config):
+    # Setup framework to hit count limit before duration limit
+    if 'testing' not in framework.config:
+        framework.config['testing'] = {'sampling': {}}
+    framework.config['testing']['sampling'] = {
+        'measurements_count': 2,
+        'total_duration_seconds': 5,
+        'sampling_frequency_hz': 10
+    }
+    
+    res = framework.run_test('greenlee')
+    
+    assert res['count'] == 2
+    assert res['duration_seconds'] < 2.5
+
+def test_run_test_duration_before_count(framework, original_config):
+    # Setup framework to hit duration limit before count limit
+    if 'testing' not in framework.config:
+        framework.config['testing'] = {'sampling': {}}
+    framework.config['testing']['sampling'] = {
+        'measurements_count': 10,
+        'total_duration_seconds': 0.5,
+        'sampling_frequency_hz': 10
+    }
+    
+    res = framework.run_test('greenlee')
+    
+    assert res['count'] < 10
+    assert res['duration_seconds'] >= 0.5
+    assert res['duration_seconds'] < 1.0
+
+def test_run_test_both_null_raises_value_error(framework, original_config):
+    # Setup framework with missing parameters
+    if 'testing' not in framework.config:
+        framework.config['testing'] = {'sampling': {}}
+    framework.config['testing']['sampling'] = {
+        'measurements_count': 'NULL',
+        'total_duration_seconds': 'NULL',
+        'sampling_frequency_hz': 10
+    }
+    
+    with pytest.raises(ValueError, match="Both measurements_count and total_duration_seconds are missing or NULL"):
+        framework.run_test('greenlee')
