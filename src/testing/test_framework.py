@@ -42,42 +42,42 @@ class AmmeterTestFramework:
         """
         sampling_cfg = self.config.get('testing', {}).get('sampling', {})
 
-        # Parse parameters, fallback to defaults if NULL or missing
+        # Extract raw configuration values
         count = sampling_cfg.get('measurements_count')
         duration = sampling_cfg.get('total_duration_seconds')
         frequency = sampling_cfg.get('sampling_frequency_hz')
 
+        # Calculate the delay between samples based on the target frequency
         freq_val = float(frequency) if frequency and frequency != 'NULL' else 1.0
         delay = 1.0 / freq_val
 
+        # Determine which constraints have been explicitly configured
         limit_by_count = count is not None and count != 'NULL'
         limit_by_duration = duration is not None and duration != 'NULL'
+
+        # Enforce that the test is bounded by at least one constraint to prevent infinite loops
+        if not limit_by_count and not limit_by_duration:
+            raise ValueError("Both measurements_count and total_duration_seconds are missing or NULL. At least one must be provided.")
+
+        # Convert limits to infinity if they are not configured, so the while loop ignores them
+        max_count = int(count) if limit_by_count else float('inf')
+        max_duration = float(duration) if limit_by_duration else float('inf')
 
         measurements = []
         start_time = time.time()
 
-        if limit_by_count:
-            max_count = int(count)
-            for _ in range(max_count):
-                val = self.get_single_reading(ammeter_type)
-                if val is not None:
-                    measurements.append(val)
-                # To ensure precise timing, wait the exact delay
-                time.sleep(delay)
-        elif limit_by_duration:
-            max_duration = float(duration)
-            while (time.time() - start_time) < max_duration:
-                val = self.get_single_reading(ammeter_type)
-                if val is not None:
-                    measurements.append(val)
-                time.sleep(delay)
-        else:
-            # Default fallback if config is completely empty
-            for _ in range(10):
-                val = self.get_single_reading(ammeter_type)
-                if val is not None:
-                    measurements.append(val)
-                time.sleep(delay)
+        # The loop terminates when the *earliest* condition is met (either max count or max duration)
+        while len(measurements) < max_count and (time.time() - start_time) < max_duration:
+            val = self.get_single_reading(ammeter_type)
+            if val is not None:
+                measurements.append(val)
+            
+            # Prevent an unnecessary trailing sleep delay if we've just hit the exact count limit
+            if len(measurements) >= max_count:
+                break
+                
+            # Wait for the next sampling cycle to maintain the requested frequency
+            time.sleep(delay)
 
         actual_duration = time.time() - start_time
 
