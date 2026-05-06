@@ -83,13 +83,16 @@ python3 main.py
 - It aggregates all measurements and returns a comprehensive metadata dictionary containing the raw array and execution stats.
 
 ### 4. Professional Testing Strategy & CI
-**The Problem:** The framework required robust verification to ensure the Unified API and Sampling Engine edge cases work reliably.
+**The Problem:** The framework required robust verification to ensure the Unified API and Sampling Engine edge cases work reliably, alongside automated quality control.
 **The Design:**
 - Refactored manual test scripts into a professional `pytest` suite located in a dedicated `tests/` directory.
 - Separated concerns: 
   - `tests/unit/` handles complex mathematical logic (e.g., statistical calculations) using parameterized edge-case testing.
   - `tests/integration/` handles end-to-end framework verification, utilizing `pytest` fixtures to safely spin up and tear down the background ammeter emulator threads.
-- Configured a GitHub Actions CI workflow (`.github/workflows/pull-request.yaml`) to automatically install dependencies and run the full test suite on every PR, ensuring continuous quality assurance.
+- Configured a GitHub Actions CI workflow (`.github/workflows/pull-request.yaml`) to automatically enforce quality standard on every PR:
+  - Validates style and syntax using `ruff`.
+  - Enforces static type checking with `mypy`.
+  - Runs the full `pytest` suite for continuous integration.
 
 ### 5. Statistical Analysis & Visualization (Issue #12)
 **The Problem:** Raw arrays of measurements need to be analyzed to extract meaningful insights, and the data needs to be visualized as part of the bonus challenge. The framework also needed a decoupled architecture to prevent monolithic methods.

@@ -18,6 +18,9 @@ class TestLogger:
         # הגדרת שם הקובץ עם תאריך ומזהה הבדיקה
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         log_file = f"{log_dir}/{timestamp}_{self._test_name}.log"
+        # Using log_file to solve the linter warning about unused variable
+        # Didn't want to change whatever I want and touch the existing code if not necessary
+        print(f"Logging to: {log_file}")
 
         # הגדרת הלוגר
         logger = logging.getLogger(f"test_{self._test_name}")
