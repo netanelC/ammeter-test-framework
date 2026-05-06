@@ -40,10 +40,10 @@ jobs:
         cache: 'pip'
 
     - name: Install Ruff
-      run: pip install ruff mypy
+      run: pip install ruff mypy types-PyYAML
 
     # Used --ignore-missing-imports to avoid changing the existing requirements.txt file
     - name: Run Linter
       run: |
         ruff check .
-        mypy --install-types .
+        mypy --ignore-missing-imports .
