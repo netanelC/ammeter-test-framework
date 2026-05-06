@@ -29,10 +29,19 @@ def start_emulators():
     time.sleep(5)
 
 if __name__ == "__main__":
+    print("Starting ammeter emulators...")
     start_emulators()
 
-    request_current_from_ammeter(5000, b'MEASURE_GREENLEE -get_measurement')  # Request from Greenlee Ammeter
-    request_current_from_ammeter(5001, b'MEASURE_ENTES -get_data')  # Request from ENTES Ammeter
-    request_current_from_ammeter(5002, b'MEASURE_CIRCUTOR -get_measurement')  # Request from CIRCUTOR Ammeter
+    # Request an initial reading just to verify connection
+    request_current_from_ammeter(5000, b'MEASURE_GREENLEE -get_measurement')
+    request_current_from_ammeter(5001, b'MEASURE_ENTES -get_data')
+    request_current_from_ammeter(5002, b'MEASURE_CIRCUTOR -get_measurement')
 
-    pass
+    print("\nEmulators are running in the background. Press Ctrl+C to stop.")
+    try:
+        # Keep the main thread alive indefinitely so the daemon threads (emulators) stay up
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print("\nShutting down emulators.")
+        pass

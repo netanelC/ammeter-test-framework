@@ -25,30 +25,21 @@ This project provides emulators for different types of ammeters: Greenlee, ENTES
 
 ## Usage
 
-# Ammeter Emulators
+The project includes production-ready example scripts for running tests and comparing historical results:
 
-## Greenlee Ammeter
+- **Run a new test:**
+  ```sh
+  python3 examples/run_framework.py --ammeter greenlee
+  ```
+  This will execute the framework using settings in `config.yaml`, print the results in JSON format, and save the visualization/archive in the `results/` folder.
 
-- **Port**: 5000
-- **Command**: `MEASURE_GREENLEE -get_measurement`
-- **Measurement Logic**: Calculates current using voltage (1V - 10V) and (0.1Ω - 100Ω).
-- **Measurement method** : Ohm's Law: I = V / R
+- **Compare historical runs:**
+  ```sh
+  python3 examples/compare_runs.py
+  ```
+  This script will prompt you for the filenames of two archived JSON result files in the `results/` folder and output a side-by-side terminal comparison of their statistics.
 
-## ENTES Ammeter
-
-- **Port**: 5001
-- **Command**: `MEASURE_ENTES -get_data`
-- **Measurement Logic**: Calculates current using magnetic field strength (0.01T - 0.1T) and calibration factor (500 - 2000).
-- **Measurement method** : Hall Effect: I = B * K
-
-## CIRCUTOR Ammeter
-
-- **Port**: 5002
-- **Command**: `MEASURE_CIRCUTOR -get_measurement`
-- **Measurement Logic**: Calculates current using voltage values (0.1V - 1.0V) over a number of samples and a random time step (0.001s - 0.01s).
-- **Measurement method** : Rogowski Coil Integration: I = ∫V dt
-
-To start the ammeter emulators and request current measurements, run the `main.py` script:
+To start the ammeter emulators in the background:
 ```sh
 python3 main.py
 ```

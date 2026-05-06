@@ -3,8 +3,7 @@ import sys
 import argparse
 
 # Ensure the root directory is in the python path
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
-sys.path.insert(0, project_root)
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from src.utils.comparison import compare_historical_runs
 from src.utils.config import load_config
@@ -13,6 +12,7 @@ def main():
     print("=== Ammeter Test Framework - Historical Comparison ===\n")
     
     # 1. Load config to find the output directory dynamically
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
     config_path = os.path.join(project_root, 'config', 'config.yaml')
     config = load_config(config_path)
     output_dir = config.get('result_management', {}).get('output_dir', 'results')

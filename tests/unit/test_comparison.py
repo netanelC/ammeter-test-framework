@@ -1,6 +1,5 @@
 import json
 import pytest
-import os
 from src.utils.comparison import compare_historical_runs
 
 @pytest.fixture
