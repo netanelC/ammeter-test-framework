@@ -219,3 +219,6 @@ __marimo__/
 
 # Gemini AI configuration
 .gemini/
+
+# Test artifacts
+results/

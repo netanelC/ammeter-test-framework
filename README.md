@@ -90,3 +90,11 @@ python3 main.py
   - `tests/unit/` handles complex mathematical logic (e.g., statistical calculations) using parameterized edge-case testing.
   - `tests/integration/` handles end-to-end framework verification, utilizing `pytest` fixtures to safely spin up and tear down the background ammeter emulator threads.
 - Configured a GitHub Actions CI workflow (`.github/workflows/pull-request.yaml`) to automatically install dependencies and run the full test suite on every PR, ensuring continuous quality assurance.
+
+### 5. Statistical Analysis & Visualization (Issue #12)
+**The Problem:** Raw arrays of measurements need to be analyzed to extract meaningful insights, and the data needs to be visualized as part of the bonus challenge. The framework also needed a decoupled architecture to prevent monolithic methods.
+**The Design:**
+- Created a robust statistical module in `src/utils/analysis.py` leveraging Python's built-in `statistics` library to compute Mean, Median, Standard Deviation, Min, and Max.
+- Integrated a clean, dashboard-style visualization module in `src/utils/visualization.py` utilizing `matplotlib`. It automatically generates line plots with user-friendly grids and includes optional horizontal reference lines for `Mean` and `Max` values.
+- **Decoupled Architecture:** Extracted the statistical calculation and visualization I/O logic out of the monolithic `run_test()` method into a private `_process_results()` helper method.
+- **Test Artifact Cleanup:** Updated the integration test suite to utilize pytest's built-in `tmp_path` fixture. The framework dynamically overrides its `output_dir` during testing so plots are written to ephemeral directories and automatically cleaned up, keeping the workspace pristine.

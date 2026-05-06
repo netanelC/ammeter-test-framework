@@ -16,9 +16,10 @@ ammeters:
     command: "MEASURE_CIRCUTOR -get_measurement"
 
 analysis:
-  statistical_metrics:
+  statistical_metrics: true
   visualization:
     enabled: true
     plot_types:
+      - line
 
 result_management:
