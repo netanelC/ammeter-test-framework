@@ -3,6 +3,8 @@
 import time
 from typing import Optional
 from ..utils.config import load_config
+from ..utils.analysis import calculate_statistics
+from ..utils.visualization import generate_simple_plot
 from Ammeters.client import request_current_from_ammeter
 
 
@@ -81,7 +83,7 @@ class AmmeterTestFramework:
 
         actual_duration = time.time() - start_time
 
-        return {
+        result = {
             "ammeter_type": ammeter_type,
             "measurements": measurements,
             "count": len(measurements),
@@ -89,3 +91,32 @@ class AmmeterTestFramework:
             "duration_seconds": actual_duration,
             "sampling_frequency_hz": freq_val
         }
+
+        return self._process_results(result)
+
+    def _process_results(self, result: dict) -> dict:
+        """Helper method to handle statistical calculations and visualization I/O cleanly."""
+        analysis_cfg = self.config.get('analysis', {})
+        measurements = result.get('measurements')
+        
+        # Calculate statistics if enabled and we have actual data
+        if analysis_cfg.get('statistical_metrics'):
+            result['statistics'] = calculate_statistics(measurements)
+
+        # Generate visualization if enabled and we have actual data
+        vis_cfg = analysis_cfg.get('visualization', {})
+        if vis_cfg.get('enabled'):
+            # Extract output directory safely, defaulting to 'results'
+            output_dir = self.config.get('result_management', {}).get('output_dir', 'results') if self.config.get('result_management') else 'results'
+            stats = result.get('statistics')
+            
+            plot_path = generate_simple_plot(
+                ammeter_type=result['ammeter_type'], 
+                measurements=measurements, 
+                output_dir=output_dir,
+                stats=stats
+            )
+            if plot_path:
+                result['plot_path'] = plot_path
+
+        return result
