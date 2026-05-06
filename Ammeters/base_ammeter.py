@@ -6,8 +6,9 @@ from abc import ABC, abstractmethod
 NotImplementedErrorMsg = "Subclasses must implement this property."
 
 class AmmeterEmulatorBase(ABC):
-    def __init__(self, port: int):
+    def __init__(self, port: int, chaos_mode: bool = False):
         self.port = port
+        self.chaos_mode = chaos_mode
         random.seed(time.time())  # Seed the random number generator for each instance
 
     def start_server(self):
@@ -27,9 +28,24 @@ class AmmeterEmulatorBase(ABC):
                     print(f"Connected by {addr}")
                     data = conn.recv(1024)
                     if data == self.get_current_command:
-                        # Call the specific measure_current() method defined in subclasses
-                        current = self.measure_current()
-                        conn.sendall(str(current).encode('utf-8'))
+                        if self.chaos_mode and random.random() < 0.10:
+                            fault = random.choice(['sleep', 'garbage', 'close'])
+                            if fault == 'sleep':
+                                time.sleep(5) # Delay longer than typical timeout
+                                current = self.measure_current()
+                                try:
+                                    conn.sendall(str(current).encode('utf-8'))
+                                except Exception:
+                                    pass
+                            elif fault == 'garbage':
+                                conn.sendall(b'ERR_NO_DATA')
+                            elif fault == 'close':
+                                # Abruptly close without sending
+                                pass
+                        else:
+                            # Call the specific measure_current() method defined in subclasses
+                            current = self.measure_current()
+                            conn.sendall(str(current).encode('utf-8'))
 
     @property
     @abstractmethod

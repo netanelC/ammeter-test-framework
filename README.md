@@ -4,24 +4,31 @@ This project provides emulators for different types of ammeters: Greenlee, ENTES
 
 ## Project Structure
 
+- `main.py`: Main script to start the ammeter emulators in the background.
 - `Ammeters/`
-  - `main.py`: Main script to start the ammeter emulators and request current measurements.
   - `Circutor_Ammeter.py`: Emulator for the CIRCUTOR ammeter.
   - `Entes_Ammeter.py`: Emulator for the ENTES ammeter.
   - `Greenlee_Ammeter.py`: Emulator for the Greenlee ammeter.
   - `base_ammeter.py`: Base class for all ammeter emulators.
   - `client.py`: Client to request current measurements from the ammeter emulators.
 - `config/`
-  - `config.yaml`: Configuration file for the ammeter emulators.
+  - `config.yaml`: Configuration file for the test framework and emulators.
 - `examples/`
-  - `run_test.py`: super lyze example for run test **don't use it**.
+  - `run_framework.py`: Production-ready CLI script to run automated tests.
+  - `compare_runs.py`: CLI script to compare two historical JSON archives.
 - `src/`
   - `testing/`
-    - `AmmeterTester.py`: Class to test the ammeter emulators.
+    - `test_framework.py`: Contains `AmmeterTestFramework`, the unified testing API and sampling engine.
   - `utils/`
-    - `config.py`: Configuration settings.
-    - `logger.py`: Logging setup.
+    - `config.py`: Configuration loader.
+    - `logger.py`: Logging setup and file handling.
     - `Utils.py`: Utility functions, including `generate_random_float`.
+    - `analysis.py`: Statistical calculation module.
+    - `visualization.py`: Matplotlib plotting module.
+    - `comparison.py`: Historical run comparison utility.
+- `tests/`
+  - `integration/`: End-to-end pytest verification (e.g., `test_api.py`).
+  - `unit/`: Isolated pytest unit tests (e.g., `test_analysis.py`, `test_comparison.py`).
 
 ## Usage
 
@@ -42,6 +49,45 @@ The project includes production-ready example scripts for running tests and comp
 To start the ammeter emulators in the background:
 ```sh
 python3 main.py
+```
+
+---
+
+## Sample Test Results
+
+When you execute a test run using the framework, it generates a comprehensive JSON report containing the raw data arrays, test metadata, and calculated statistics. Here is an example of a generated result file (`results/greenlee_20260506_145000_a1b2c3d4.json`):
+
+```json
+{
+  "ammeter_type": "greenlee",
+  "measurements": [
+    0.5010,
+    5.8526,
+    0.0742,
+    0.0197,
+    1.2961,
+    5.7601,
+    0.0731,
+    0.0555,
+    1.1312,
+    0.0484
+  ],
+  "count": 10,
+  "expected_count": 10,
+  "duration_seconds": 4.5129,
+  "sampling_frequency_hz": 2.0,
+  "statistics": {
+    "mean": 1.4812,
+    "median": 0.2876,
+    "min": 0.0197,
+    "max": 5.8526,
+    "stdev": 2.3266
+  },
+  "test_id": "a1b2c3d4-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+  "timestamp": "20260506_145000",
+  "plot_path": "results/greenlee_20260506_145000_plot.png",
+  "archive_path": "results/greenlee_20260506_145000_a1b2c3d4.json"
+}
 ```
 
 ---

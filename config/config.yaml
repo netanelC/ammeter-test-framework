@@ -1,4 +1,5 @@
 testing:
+  error_simulation: false
   sampling:
     measurements_count: 10
     total_duration_seconds: 5

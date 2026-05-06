@@ -23,29 +23,26 @@ def create_mock_run(tmp_path):
         return str(file_path)
     return _create
 
-def test_compare_historical_runs_happy_path(create_mock_run, capsys):
+def test_compare_historical_runs_happy_path(create_mock_run):
     stats = {"mean": 0.5, "max": 1.0}
     path1 = create_mock_run("id1", "greenlee", stats)
     path2 = create_mock_run("id2", "greenlee", stats)
     
-    compare_historical_runs(path1, path2)
+    data = compare_historical_runs(path1, path2)
     
-    captured = capsys.readouterr()
-    assert "Metric" in captured.out
-    assert "Run 1" in captured.out
-    assert "Run 2" in captured.out
-    assert "Mean (A)" in captured.out
+    assert data["run1"]["ammeter"] == "greenlee"
+    assert data["run1"]["mean"] == 0.5
+    assert data["run2"]["mean"] == 0.5
 
-def test_compare_historical_runs_file_not_found(capsys):
-    compare_historical_runs("non_existent_1.json", "non_existent_2.json")
-    captured = capsys.readouterr()
-    assert "Error: Could not find file" in captured.out
+def test_compare_historical_runs_file_not_found():
+    with pytest.raises(FileNotFoundError):
+        compare_historical_runs("non_existent_1.json", "non_existent_2.json")
 
-def test_compare_historical_runs_missing_stats(create_mock_run, capsys):
+def test_compare_historical_runs_missing_stats(create_mock_run):
     path1 = create_mock_run("id1", "greenlee", stats=None)
     path2 = create_mock_run("id2", "greenlee", stats=None)
     
-    compare_historical_runs(path1, path2)
+    data = compare_historical_runs(path1, path2)
     
-    captured = capsys.readouterr()
-    assert "N/A" in captured.out
+    assert data["run1"]["mean"] is None
+    assert data["run2"]["mean"] is None

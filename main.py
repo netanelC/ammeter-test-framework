@@ -5,32 +5,36 @@ from Ammeters.Circutor_Ammeter import CircutorAmmeter
 from Ammeters.Entes_Ammeter import EntesAmmeter
 from Ammeters.Greenlee_Ammeter import GreenleeAmmeter
 from Ammeters.client import request_current_from_ammeter
+from src.utils.config import load_config
 
 
-def run_greenlee_emulator():
-    greenlee = GreenleeAmmeter(5000)
+def run_greenlee_emulator(chaos_mode: bool = False):
+    greenlee = GreenleeAmmeter(5000, chaos_mode=chaos_mode)
     greenlee.start_server()
 
-def run_entes_emulator():
-    entes = EntesAmmeter(5001)
+def run_entes_emulator(chaos_mode: bool = False):
+    entes = EntesAmmeter(5001, chaos_mode=chaos_mode)
     entes.start_server()
 
-def run_circutor_emulator():
-    circutor = CircutorAmmeter(5002)
+def run_circutor_emulator(chaos_mode: bool = False):
+    circutor = CircutorAmmeter(5002, chaos_mode=chaos_mode)
     circutor.start_server()
 
-def start_emulators():
+def start_emulators(chaos_mode: bool = False):
     # Start each ammeter in a separate thread
-    threading.Thread(target=run_greenlee_emulator, daemon=True).start()
-    threading.Thread(target=run_entes_emulator, daemon=True).start()
-    threading.Thread(target=run_circutor_emulator, daemon=True).start()
+    threading.Thread(target=run_greenlee_emulator, args=(chaos_mode,), daemon=True).start()
+    threading.Thread(target=run_entes_emulator, args=(chaos_mode,), daemon=True).start()
+    threading.Thread(target=run_circutor_emulator, args=(chaos_mode,), daemon=True).start()
     
     # Wait for the servers to start, if you have problem restarting the servers between runs try increasing sleep time.
     time.sleep(5)
 
 if __name__ == "__main__":
-    print("Starting ammeter emulators...")
-    start_emulators()
+    config = load_config("config/config.yaml")
+    chaos_mode = config.get("testing", {}).get("error_simulation", False)
+    
+    print(f"Starting ammeter emulators... (Chaos Mode: {chaos_mode})")
+    start_emulators(chaos_mode)
 
     # Request an initial reading just to verify connection
     request_current_from_ammeter(5000, b'MEASURE_GREENLEE -get_measurement')
