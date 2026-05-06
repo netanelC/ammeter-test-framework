@@ -7,7 +7,9 @@ from Ammeters.Entes_Ammeter import EntesAmmeter
 from Ammeters.Greenlee_Ammeter import GreenleeAmmeter
 from Ammeters.client import request_current_from_ammeter
 from src.utils.config import load_config
+from src.utils.logger import TestLogger
 
+logger = TestLogger("Main").logger
 
 def run_greenlee_emulator(port: int, chaos_mode: bool = False):
     greenlee = GreenleeAmmeter(port, chaos_mode=chaos_mode)
@@ -47,28 +49,28 @@ def start_emulators(config: dict):
     ports_to_wait = [greenlee_cfg.get('port', 5000), entes_cfg.get('port', 5001), circutor_cfg.get('port', 5002)]
     for port in ports_to_wait:
         if not wait_for_port(port):
-            print(f"Warning: Timeout waiting for emulator on port {port} to start.")
+            logger.warning(f"Timeout waiting for emulator on port {port} to start.")
 
 if __name__ == "__main__":
     config = load_config("config/config.yaml")
     chaos_mode = config.get("testing", {}).get("error_simulation", False)
     
-    print(f"Starting ammeter emulators... (Chaos Mode: {chaos_mode})")
+    logger.info(f"Starting ammeter emulators... (Chaos Mode: {chaos_mode})")
     start_emulators(config)
 
     # Request an initial reading just to verify connection dynamically
-    print("\nVerifying connections...")
+    logger.info("Verifying connections...")
     for name, cfg in config.get("ammeters", {}).items():
         port = cfg.get("port")
         command = cfg.get("command", "").encode("utf-8")
         if port and command:
             request_current_from_ammeter(port, command)
 
-    print("\nEmulators are running in the background. Press Ctrl+C to stop.")
+    logger.info("Emulators are running in the background. Press Ctrl+C to stop.")
     try:
         # Keep the main thread alive indefinitely so the daemon threads (emulators) stay up
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
-        print("\nShutting down emulators.")
+        logger.info("Shutting down emulators.")
         pass

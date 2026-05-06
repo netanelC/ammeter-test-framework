@@ -5,8 +5,11 @@ import concurrent.futures
 # Ensure the parent directory is in the sys.path so we can import src
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src.testing.test_framework import AmmeterTestFramework
-from src.utils.accuracy import evaluate_accuracy
+from src.utils.logger import TestLogger
+logger = TestLogger("AssessAccuracy").logger
+
+from src.testing.test_framework import AmmeterTestFramework  # noqa: E402
+from src.utils.accuracy import evaluate_accuracy  # noqa: E402
 
 def run_ammeter_test(ammeter_type):
     framework = AmmeterTestFramework()
@@ -19,12 +22,12 @@ def run_ammeter_test(ammeter_type):
     return framework.run_test(ammeter_type)
 
 def main():
-    print("Starting Accuracy Assessment...")
+    logger.info("Starting Accuracy Assessment...")
     ammeters = ['greenlee', 'entes', 'circutor']
     results = {}
     
     # 1. Concurrency: Run tests simultaneously
-    print("Running tests concurrently for all ammeters...")
+    logger.info("Running tests concurrently for all ammeters...")
     with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
         future_to_ammeter = {executor.submit(run_ammeter_test, a): a for a in ammeters}
         for future in concurrent.futures.as_completed(future_to_ammeter):
@@ -33,13 +36,13 @@ def main():
                 data = future.result()
                 results[ammeter_type] = data
             except Exception as exc:
-                print(f"{ammeter_type} generated an exception: {exc}")
+                logger.error(f"{ammeter_type} generated an exception: {exc}")
 
     try:
         # Evaluate accuracy, data aggregation, relative accuracy calculation, scoring & identification
         evaluation = evaluate_accuracy(results)
     except ValueError as e:
-        print(f"Error during accuracy evaluation: {e}. Exiting.")
+        logger.error(f"Error during accuracy evaluation: {e}. Exiting.")
         sys.exit(1)
 
     # CLI Output

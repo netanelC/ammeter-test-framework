@@ -8,7 +8,9 @@ from src.testing.test_framework import AmmeterTestFramework
 def ammeter_emulators():
     """Starts the ammeter emulators in the background for integration tests."""
     from main import start_emulators
-    start_emulators()
+    from src.utils.config import load_config
+    config = load_config("config/config.yaml")
+    start_emulators(config)
     yield
     # Daemon threads will terminate automatically when the pytest session completes
 
