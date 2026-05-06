@@ -1,6 +1,10 @@
 
 
 import time
+import json
+import os
+import uuid
+from datetime import datetime
 from typing import Optional
 import typing
 from ..utils.config import load_config
@@ -96,19 +100,27 @@ class AmmeterTestFramework:
         return self._process_results(result)
 
     def _process_results(self, result: dict) -> dict:
-        """Helper method to handle statistical calculations and visualization I/O cleanly."""
+        """Helper method to handle statistical calculations, visualization, and JSON archiving."""
+        # Generate unique test ID and timestamp
+        test_id = str(uuid.uuid4())
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        
+        result['test_id'] = test_id
+        result['timestamp'] = timestamp
+        
         analysis_cfg = self.config.get('analysis', {})
         measurements: typing.List[float] = result.get('measurements', [])
         
-        # Calculate statistics if enabled and we have actual data
+        # Calculate statistics if enabled (will explicitly fail if measurements is empty)
         if analysis_cfg.get('statistical_metrics'):
             result['statistics'] = calculate_statistics(measurements)
 
-        # Generate visualization if enabled and we have actual data
+        # Output directory resolution
+        output_dir = self.config.get('result_management', {}).get('output_dir', 'results') if self.config.get('result_management') else 'results'
+
+        # Generate visualization if enabled (will explicitly fail if measurements is empty)
         vis_cfg = analysis_cfg.get('visualization', {})
         if vis_cfg.get('enabled'):
-            # Extract output directory safely, defaulting to 'results'
-            output_dir = self.config.get('result_management', {}).get('output_dir', 'results') if self.config.get('result_management') else 'results'
             stats = result.get('statistics')
             
             plot_path = generate_simple_plot(
@@ -119,5 +131,15 @@ class AmmeterTestFramework:
             )
             if plot_path:
                 result['plot_path'] = plot_path
+
+        # Result Management: Archive the test run to a structured JSON file
+        os.makedirs(output_dir, exist_ok=True)
+        json_filename = f"{result['ammeter_type']}_{timestamp}_{test_id[:8]}.json"
+        json_filepath = os.path.join(output_dir, json_filename)
+        
+        with open(json_filepath, 'w', encoding='utf-8') as f:
+            json.dump(result, f, indent=2, ensure_ascii=False)
+            
+        result['archive_path'] = json_filepath
 
         return result

@@ -101,3 +101,12 @@ python3 main.py
 - Integrated a clean, dashboard-style visualization module in `src/utils/visualization.py` utilizing `matplotlib`. It automatically generates line plots with user-friendly grids and includes optional horizontal reference lines for `Mean` and `Max` values.
 - **Decoupled Architecture:** Extracted the statistical calculation and visualization I/O logic out of the monolithic `run_test()` method into a private `_process_results()` helper method.
 - **Test Artifact Cleanup:** Updated the integration test suite to utilize pytest's built-in `tmp_path` fixture. The framework dynamically overrides its `output_dir` during testing so plots are written to ephemeral directories and automatically cleaned up, keeping the workspace pristine.
+
+### 6. Result Management and Archiving System (Issue #13)
+**The Problem:** The exam requires a robust result archiving system to store test runs for historical review and comparison.
+**The Design:**
+- Enhanced `_process_results()` to generate a unique `test_id` (UUID) and `timestamp` for every automated test run.
+- Archiving mechanism dumps the entire test run metadata—including configuration parameters, raw measurements arrays, and calculated statistical metrics—to a structured JSON file.
+- The JSON output is saved into the configurable `results/` directory using an identifiable naming convention (`{ammeter_type}_{timestamp}_{uuid}.json`).
+- **Historical Comparison (Decoupled):** Adhering to the Single Responsibility Principle, the comparison logic was extracted into a standalone utility module (`src/utils/comparison.py`). It loads two archived JSON files by their paths and outputs a side-by-side terminal table comparing their counts, durations, and statistical metrics (Mean, Max) for clear, actionable observability. An executable example script is provided at `examples/compare_runs.py`.
+- Updated the integration test suite to assert that the `archive_path` exists, the JSON structure maintains integrity, and the decoupled comparison table successfully generates.
