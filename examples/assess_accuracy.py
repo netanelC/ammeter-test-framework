@@ -46,7 +46,7 @@ def main():
         sys.exit(1)
 
     # CLI Output
-    print(f"\n--- Accuracy Assessment Report ---")
+    print("\n--- Accuracy Assessment Report ---")
     print(f"Ensemble Mean (Consensus): {evaluation['ensemble_mean']:.6f} A\n")
 
     print(f"{'Ammeter':<12} | {'Mean (A)':<12} | {'Abs Error (A)':<15} | {'CV (%)':<10}")
