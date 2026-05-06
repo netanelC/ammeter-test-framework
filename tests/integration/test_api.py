@@ -64,6 +64,23 @@ def test_run_test_count_before_duration(framework, original_config, tmp_path):
     assert 'plot_path' in res
     
     assert os.path.exists(res['plot_path'])
+    
+    # Verify archiving system metadata
+    assert 'test_id' in res
+    assert 'timestamp' in res
+    assert 'archive_path' in res
+    
+    archive_path = res['archive_path']
+    assert os.path.exists(archive_path)
+    
+    # Verify the JSON file contains the correct test structure
+    import json
+    with open(archive_path, 'r', encoding='utf-8') as f:
+        archived_data = json.load(f)
+        
+    assert archived_data['test_id'] == res['test_id']
+    assert archived_data['ammeter_type'] == 'greenlee'
+    assert len(archived_data['measurements']) == 2
 
 def test_run_test_duration_before_count(framework, original_config, tmp_path):
     # Setup framework to hit duration limit before count limit
