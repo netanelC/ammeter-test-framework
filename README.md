@@ -149,7 +149,7 @@ When you execute a test run using the framework, it generates a comprehensive JS
 - When enabled, `main.py` passes the `chaos_mode` flag to the ammeters, causing them to randomly inject hardware faults 10% of the time (e.g., sleeping beyond the client timeout, returning malformed byte strings, or abruptly closing the connection).
 - The client connection logic (`Ammeters/client.py`) was refactored with a robust `try-except` block to catch `socket.timeout`, `ValueError`, and `ConnectionError` gracefully without crashing the active test.
 
-### 3. Accuracy Assessment & Concurrency (Bonus)
+### 3. Accuracy Assessment & Concurrency (Bonus) (Issue #4)
 - Extracted mathematical aggregation into a dedicated, unit-tested module `src/utils/accuracy.py`.
 - Created an executable script `examples/assess_accuracy.py` utilizing Python's `concurrent.futures.ThreadPoolExecutor` to simultaneously fetch samples from all emulators, calculate the ensemble mean, and highlight the most precise and accurate devices in a formatted terminal report.
 
