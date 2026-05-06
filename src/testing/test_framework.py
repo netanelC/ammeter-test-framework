@@ -2,8 +2,8 @@
 
 import time
 import json
-import os
 import uuid
+from pathlib import Path
 from datetime import datetime
 from typing import Optional
 import typing
@@ -11,7 +11,9 @@ from ..utils.config import load_config
 from ..utils.analysis import calculate_statistics
 from ..utils.visualization import generate_simple_plot
 from Ammeters.client import request_current_from_ammeter
+from ..utils.logger import TestLogger
 
+logger = TestLogger("AmmeterTestFramework").logger
 
 class AmmeterTestFramework:
     def __init__(self, config_path: str = "config/config.yaml"):
@@ -49,26 +51,24 @@ class AmmeterTestFramework:
         """
         sampling_cfg = self.config.get('testing', {}).get('sampling', {})
 
-        # Extract raw configuration values
-        count = sampling_cfg.get('measurements_count')
-        duration = sampling_cfg.get('total_duration_seconds')
-        frequency = sampling_cfg.get('sampling_frequency_hz')
+        # Helper to convert 'NULL' string or None to real Python None
+        def normalize(val):
+            return None if val is None or val == 'NULL' else val
+
+        count = normalize(sampling_cfg.get('measurements_count'))
+        duration = normalize(sampling_cfg.get('total_duration_seconds'))
+        frequency = normalize(sampling_cfg.get('sampling_frequency_hz'))
 
         # Calculate the delay between samples based on the target frequency
-        freq_val = float(frequency) if frequency and frequency != 'NULL' else 1.0
+        freq_val = float(frequency) if frequency is not None else 1.0
         delay = 1.0 / freq_val
 
-        # Determine which constraints have been explicitly configured
-        limit_by_count = count is not None and count != 'NULL'
-        limit_by_duration = duration is not None and duration != 'NULL'
-
-        # Enforce that the test is bounded by at least one constraint to prevent infinite loops
-        if not limit_by_count and not limit_by_duration:
-            raise ValueError("Both measurements_count and total_duration_seconds are missing or NULL. At least one must be provided.")
+        if count is None and duration is None:
+            raise ValueError("Both measurements_count and total_duration_seconds are missing. At least one must be provided.")
 
         # Convert limits to infinity if they are not configured, so the while loop ignores them
-        max_count = int(count) if limit_by_count else float('inf')
-        max_duration = float(duration) if limit_by_duration else float('inf')
+        max_count = int(count) if count is not None else float('inf')
+        max_duration = float(duration) if duration is not None else float('inf')
 
         measurements: typing.List[float] = []
         start_time = time.time()
@@ -78,15 +78,16 @@ class AmmeterTestFramework:
             val = self.get_single_reading(ammeter_type)
             if val is not None:
                 measurements.append(val)
+                logger.debug(f"Captured reading: {val}")
             
             # Prevent an unnecessary trailing sleep delay if we've just hit the exact count limit
             if len(measurements) >= max_count:
                 break
-                
             # Wait for the next sampling cycle to maintain the requested frequency
             time.sleep(delay)
 
         actual_duration = time.time() - start_time
+        logger.info(f"Test run completed for {ammeter_type}. Collected {len(measurements)} samples.")
 
         result = {
             "ammeter_type": ammeter_type,
@@ -101,45 +102,39 @@ class AmmeterTestFramework:
 
     def _process_results(self, result: dict) -> dict:
         """Helper method to handle statistical calculations, visualization, and JSON archiving."""
-        # Generate unique test ID and timestamp
-        test_id = str(uuid.uuid4())
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        
-        result['test_id'] = test_id
-        result['timestamp'] = timestamp
-        
         analysis_cfg = self.config.get('analysis', {})
         measurements: typing.List[float] = result.get('measurements', [])
         
-        # Calculate statistics if enabled (will explicitly fail if measurements is empty)
         if analysis_cfg.get('statistical_metrics'):
             result['statistics'] = calculate_statistics(measurements)
 
-        # Output directory resolution
-        output_dir = self.config.get('result_management', {}).get('output_dir', 'results') if self.config.get('result_management') else 'results'
+        output_dir = Path(self.config.get('result_management', {}).get('output_dir', 'results'))
 
-        # Generate visualization if enabled (will explicitly fail if measurements is empty)
         vis_cfg = analysis_cfg.get('visualization', {})
         if vis_cfg.get('enabled'):
             stats = result.get('statistics')
-            
             plot_path = generate_simple_plot(
                 ammeter_type=result['ammeter_type'], 
                 measurements=measurements, 
-                output_dir=output_dir,
+                output_dir=str(output_dir),
                 stats=stats
             )
             if plot_path:
                 result['plot_path'] = plot_path
 
-        # Result Management: Archive the test run to a structured JSON file
-        os.makedirs(output_dir, exist_ok=True)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        test_id = str(uuid.uuid4())
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        result['test_id'] = test_id
+        result['timestamp'] = timestamp
+        
         json_filename = f"{result['ammeter_type']}_{timestamp}_{test_id[:8]}.json"
-        json_filepath = os.path.join(output_dir, json_filename)
+        json_filepath = output_dir / json_filename
         
         with open(json_filepath, 'w', encoding='utf-8') as f:
             json.dump(result, f, indent=2, ensure_ascii=False)
             
-        result['archive_path'] = json_filepath
+        result['archive_path'] = str(json_filepath)
+        logger.info(f"Results archived to {json_filepath}")
 
         return result

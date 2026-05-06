@@ -111,5 +111,5 @@ def test_run_test_both_null_raises_value_error(framework, original_config):
         'sampling_frequency_hz': 10
     })
 
-    with pytest.raises(ValueError, match="Both measurements_count and total_duration_seconds are missing or NULL"):
+    with pytest.raises(ValueError, match="Both measurements_count and total_duration_seconds are missing. At least one must be provided."):
         framework.run_test('greenlee')
