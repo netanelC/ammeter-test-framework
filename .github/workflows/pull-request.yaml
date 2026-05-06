@@ -46,4 +46,4 @@ jobs:
     - name: Run Linter
       run: |
         ruff check .
-        mypy .
+        mypy --install-types .
