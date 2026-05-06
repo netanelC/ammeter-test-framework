@@ -1,5 +1,5 @@
 import os
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt # type: ignore
 from typing import List, Optional, Dict
 from datetime import datetime
 

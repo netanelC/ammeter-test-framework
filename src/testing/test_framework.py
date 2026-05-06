@@ -2,6 +2,7 @@
 
 import time
 from typing import Optional
+import typing
 from ..utils.config import load_config
 from ..utils.analysis import calculate_statistics
 from ..utils.visualization import generate_simple_plot
@@ -65,7 +66,7 @@ class AmmeterTestFramework:
         max_count = int(count) if limit_by_count else float('inf')
         max_duration = float(duration) if limit_by_duration else float('inf')
 
-        measurements = []
+        measurements: typing.List[float] = []
         start_time = time.time()
 
         # The loop terminates when the *earliest* condition is met (either max count or max duration)
@@ -97,7 +98,7 @@ class AmmeterTestFramework:
     def _process_results(self, result: dict) -> dict:
         """Helper method to handle statistical calculations and visualization I/O cleanly."""
         analysis_cfg = self.config.get('analysis', {})
-        measurements = result.get('measurements')
+        measurements: typing.List[float] = result.get('measurements', [])
         
         # Calculate statistics if enabled and we have actual data
         if analysis_cfg.get('statistical_metrics'):
