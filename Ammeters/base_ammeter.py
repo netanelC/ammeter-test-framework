@@ -2,6 +2,7 @@ import socket
 import time
 import random
 from abc import ABC, abstractmethod
+from src.utils.logger import TestLogger
 
 NotImplementedErrorMsg = "Subclasses must implement this property."
 
@@ -9,6 +10,7 @@ class AmmeterEmulatorBase(ABC):
     def __init__(self, port: int, chaos_mode: bool = False):
         self.port = port
         self.chaos_mode = chaos_mode
+        self.logger = TestLogger(self.__class__.__name__).logger
         random.seed(time.time())  # Seed the random number generator for each instance
 
     def start_server(self):
@@ -21,11 +23,11 @@ class AmmeterEmulatorBase(ABC):
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             s.bind(('localhost', self.port))
             s.listen()
-            print(f"{self.__class__.__name__} is running on port {self.port}")
+            self.logger.info(f"{self.__class__.__name__} is running on port {self.port}")
             while True:
                 conn, addr = s.accept()
                 with conn:
-                    print(f"Connected by {addr}")
+                    self.logger.info(f"Connected by {addr}")
                     data = conn.recv(1024)
                     if data == self.get_current_command:
                         if self.chaos_mode and random.random() < 0.10:
@@ -63,4 +65,3 @@ class AmmeterEmulatorBase(ABC):
         logic for current measurement.
         """
         raise NotImplementedError(NotImplementedErrorMsg)
-

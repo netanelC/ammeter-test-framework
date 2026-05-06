@@ -4,52 +4,96 @@ This project provides emulators for different types of ammeters: Greenlee, ENTES
 
 ## Project Structure
 
-- `main.py`: Main script to start the ammeter emulators in the background.
-- `Ammeters/`
-  - `Circutor_Ammeter.py`: Emulator for the CIRCUTOR ammeter.
-  - `Entes_Ammeter.py`: Emulator for the ENTES ammeter.
-  - `Greenlee_Ammeter.py`: Emulator for the Greenlee ammeter.
-  - `base_ammeter.py`: Base class for all ammeter emulators.
-  - `client.py`: Client to request current measurements from the ammeter emulators.
-- `config/`
-  - `config.yaml`: Configuration file for the test framework and emulators.
-- `examples/`
-  - `run_framework.py`: Production-ready CLI script to run automated tests.
-  - `compare_runs.py`: CLI script to compare two historical JSON archives.
-- `src/`
-  - `testing/`
-    - `test_framework.py`: Contains `AmmeterTestFramework`, the unified testing API and sampling engine.
-  - `utils/`
-    - `config.py`: Configuration loader.
-    - `logger.py`: Logging setup and file handling.
-    - `Utils.py`: Utility functions, including `generate_random_float`.
-    - `analysis.py`: Statistical calculation module.
-    - `visualization.py`: Matplotlib plotting module.
-    - `comparison.py`: Historical run comparison utility.
-- `tests/`
-  - `integration/`: End-to-end pytest verification (e.g., `test_api.py`).
-  - `unit/`: Isolated pytest unit tests (e.g., `test_analysis.py`, `test_comparison.py`).
+```text
+ammeter-test-framework/
+├── Ammeters/
+│   ├── Circutor_Ammeter.py
+│   ├── Entes_Ammeter.py
+│   ├── Greenlee_Ammeter.py
+│   ├── base_ammeter.py
+│   └── client.py
+├── config/
+│   └── config.yaml
+├── examples/
+│   ├── assess_accuracy.py
+│   ├── compare_runs.py
+│   ├── run_framework.py
+│   └── run_tests.py
+├── src/
+│   ├── testing/
+│   │   └── test_framework.py
+│   └── utils/
+│       ├── Utils.py
+│       ├── accuracy.py
+│       ├── analysis.py
+│       ├── comparison.py
+│       ├── config.py
+│       ├── logger.py
+│       └── visualization.py
+├── tests/
+│   ├── integration/
+│   │   └── test_api.py
+│   └── unit/
+│       ├── test_accuracy.py
+│       ├── test_analysis.py
+│       └── test_comparison.py
+├── main.py
+├── README.md
+└── requirements.txt
+```
 
-## Usage
+## Libraries Installed
 
-The project includes production-ready example scripts for running tests and comparing historical results:
+To run this code and utilize all the bonus features (like statistical analysis and data visualization), the following Python libraries were installed via `requirements.txt`:
+- **`pytest`**: For running the automated unit and integration test suites.
+- **`matplotlib`**: For rendering line charts of the collected ammeter data.
+- **`pyyaml`**: For parsing the configuration-driven framework approach.
 
-- **Run a new test:**
-  ```sh
-  python3 examples/run_framework.py --ammeter greenlee
-  ```
-  This will execute the framework using settings in `config.yaml`, print the results in JSON format, and save the visualization/archive in the `results/` folder.
+## Usage Guide
 
-- **Compare historical runs:**
-  ```sh
-  python3 examples/compare_runs.py
-  ```
-  This script will prompt you for the filenames of two archived JSON result files in the `results/` folder and output a side-by-side terminal comparison of their statistics.
+The framework is driven entirely by `config/config.yaml`. Before running any commands, ensure your desired sampling rates, durations, and output paths are set correctly in the configuration file.
 
-To start the ammeter emulators in the background:
+### 1. Start the Ammeter Emulators (Server)
+Before running any tests, you must start the local ammeter emulators. This script reads `config.yaml` to dynamically bind the correct ports and commands.
 ```sh
 python3 main.py
 ```
+*(Leave this running in the background or in a separate terminal tab).*
+
+### 2. Run a Simple Sequential Test
+To verify the framework is connected and operational, run a simple, sequential test sequence across all three ammeters. This will print a clean terminal summary without generating archives.
+```sh
+python3 examples/run_tests.py
+```
+
+### 3. Run a Production Automated Test & Visualization
+To run a full test against a specific ammeter, generating a JSON archive and a Matplotlib visualization line-chart:
+```sh
+python3 examples/run_framework.py --ammeter greenlee
+```
+*(Available options: `greenlee`, `entes`, `circutor`).*
+The resulting JSON file and `.png` graph will automatically be saved into the `results/` directory.
+
+### 4. Assess Accuracy & Precision (Bonus)
+To determine which ammeter is the most precise and accurate, this script executes concurrent, multi-threaded sampling across all three emulators simultaneously. It calculates the Ensemble Mean (consensus) and provides a clean terminal report highlighting the winners.
+```sh
+python3 examples/assess_accuracy.py
+```
+
+### 5. Compare Historical Runs
+If you want to evaluate two historical JSON archives side-by-side, use the comparison utility.
+```sh
+python3 examples/compare_runs.py
+```
+*(You will be prompted to paste the filenames of the two JSON files you wish to compare).*
+
+### 6. Enable Error Simulation / Chaos Mode (Bonus)
+To simulate hardware faults and network drops, open `config/config.yaml` and set:
+```yaml
+testing:
+  error_simulation: true
+```
+Restart `main.py`. The emulators will now randomly sleep beyond timeouts, return malformed garbage bytes, or abruptly drop connections. The `client.py` and test framework will gracefully catch these errors and auto-recover.
 
 ---
 
@@ -81,7 +125,9 @@ When you execute a test run using the framework, it generates a comprehensive JS
     "median": 0.2876,
     "min": 0.0197,
     "max": 5.8526,
-    "stdev": 2.3266
+    "stdev": 2.3266,
+    "cv_percentage": 157.0753,
+    "is_consistent": false
   },
   "test_id": "a1b2c3d4-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
   "timestamp": "20260506_145000",
@@ -92,16 +138,24 @@ When you execute a test run using the framework, it generates a comprehensive JS
 
 ---
 
-## Design Decisions & Bug Fixes
+## Design Decisions & Bonus Features
 
-### 1. Emulator Communication Fix (PR #10)
-**The Problem:** The initial `main.py` script failed to fetch data from the ammeter emulators.
-**The Fix:** 
-- Discovered discrepancies between the documented ports/commands, `main.py`, and the actual `Ammeters/*_Ammeter.py` implementations.
-- Unified the configuration to make `config/config.yaml` and the emulator classes the source of truth.
-- Set the ammeters to listen sequentially on ports `5000` (Greenlee), `5001` (ENTES), and `5002` (CIRCUTOR).
-- Updated `main.py` to send the correct byte strings (e.g., `b'MEASURE_CIRCUTOR -get_measurement'`).
-- Added `socket.SO_REUSEADDR` to `base_ammeter.py` to prevent "Address already in use" errors during rapid test iterations.
+### 1. Configuration-Driven Testing (Bonus) & Main.py Refactor
+- Unified the configuration to make `config/config.yaml` and the emulator classes the single source of truth. 
+- Refactored `main.py` to dynamically load port bindings and commands rather than hardcoding them. Added a robust verification loop that polls the sockets on startup instead of relying on an arbitrary `time.sleep()`.
+
+### 2. Error Simulation / Chaos Mode (Bonus)
+- Added an `error_simulation` boolean toggle in the `testing` block of `config.yaml`.
+- When enabled, `main.py` passes the `chaos_mode` flag to the ammeters, causing them to randomly inject hardware faults 10% of the time (e.g., sleeping beyond the client timeout, returning malformed byte strings, or abruptly closing the connection).
+- The client connection logic (`Ammeters/client.py`) was refactored with a robust `try-except` block to catch `socket.timeout`, `ValueError`, and `ConnectionError` gracefully without crashing the active test.
+
+### 3. Accuracy Assessment & Concurrency (Bonus) (Issue #4)
+- Extracted mathematical aggregation into a dedicated, unit-tested module `src/utils/accuracy.py`.
+- Created an executable script `examples/assess_accuracy.py` utilizing Python's `concurrent.futures.ThreadPoolExecutor` to simultaneously fetch samples from all emulators, calculate the ensemble mean, and highlight the most precise and accurate devices in a formatted terminal report.
+
+### 4. Performance Consistency Evaluation (Bonus)
+- Updated the core statistical payload in `src/utils/analysis.py` to compute the **Coefficient of Variation (CV %)** (`(stdev / mean) * 100`).
+- Added a configurable threshold to evaluate a new boolean metric `is_consistent`, returning true only if the device's CV is below a 5.0% deviation baseline.
 
 ### 2. Unified Testing API (Issue #7)
 **The Problem:** The exam requires a unified interface capable of communicating consistently with multiple ammeter types.
