@@ -12,7 +12,7 @@ class TestLogger:
         הגדרת הלוגר עם פורמט מותאם וכתיבה לקובץ
         """
         # יצירת תיקיית הלוגים
-        log_dir = Path("results/logs")
+        log_dir = Path("logs")
         log_dir.mkdir(parents=True, exist_ok=True)
 
         # הגדרת שם הקובץ עם תאריך ומזהה הבדיקה
